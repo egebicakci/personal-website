@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { ArrowRight } from "lucide-react";
-import { BrandIcon, getBrandTheme } from "@/components/brand-icons";
+import { BrandIcon } from "@/components/brand-icons";
 import { siteContent } from "@/data/site-content";
 import { Reveal } from "@/components/ui/reveal";
 import { TravelGalleryLauncher } from "@/components/ui/travel-gallery-launcher";

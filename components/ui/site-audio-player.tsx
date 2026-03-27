@@ -1,19 +1,21 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 
 export function SiteAudioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pausedByModalRef = useRef(false);
+  const modalOpenRef = useRef(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [hasMounted, setHasMounted] = useState(false);
+  const hasMounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ top: 24, right: 24 });
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
 
   const moveButton = () => {
     if (typeof window === "undefined") return;
@@ -64,7 +66,7 @@ export function SiteAudioPlayer() {
     const audio = audioRef.current;
 
     const tryResumePlayback = async () => {
-      if (audio.muted) return;
+      if (audio.muted || modalOpenRef.current) return;
 
       try {
         await audio.play();
@@ -94,6 +96,45 @@ export function SiteAudioPlayer() {
       window.removeEventListener("keydown", handleFirstInteraction);
       window.removeEventListener("focus", handleFirstInteraction);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [hasMounted]);
+
+  useEffect(() => {
+    if (!hasMounted || !audioRef.current) return;
+
+    const audio = audioRef.current;
+
+    const handlePauseForModal = () => {
+      modalOpenRef.current = true;
+      if (!audio.paused) {
+        pausedByModalRef.current = true;
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        pausedByModalRef.current = false;
+      }
+    };
+
+    const handleResumeAfterModal = async () => {
+      modalOpenRef.current = false;
+      if (!pausedByModalRef.current || audio.muted) return;
+
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      } finally {
+        pausedByModalRef.current = false;
+      }
+    };
+
+    window.addEventListener("lucky-spin:open", handlePauseForModal);
+    window.addEventListener("lucky-spin:close", handleResumeAfterModal);
+
+    return () => {
+      window.removeEventListener("lucky-spin:open", handlePauseForModal);
+      window.removeEventListener("lucky-spin:close", handleResumeAfterModal);
     };
   }, [hasMounted]);
 

@@ -2,12 +2,22 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import type { TravelPin } from "@/data/site-content";
 
-const Globe = dynamic(() => import("react-globe.gl"), { ssr: false }) as ComponentType<Record<string, unknown>>;
+const Globe = dynamic(() => import("react-globe.gl"), { ssr: false }) as ComponentType<
+  Record<string, unknown>
+>;
 
 type InteractiveGlobeProps = {
   pins: TravelPin[];
@@ -28,6 +38,11 @@ type GlobeInstance = {
 };
 
 export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
   const globeRef = useRef<GlobeInstance | null>(null);
   const rotationSpeedRef = useRef(0.45);
@@ -36,6 +51,28 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
   const [galleryPin, setGalleryPin] = useState<TravelPin | null>(null);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
   const [isPointerOverGlobe, setIsPointerOverGlobe] = useState(false);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+
+    const originalWarn = console.warn;
+
+    console.warn = (...args: unknown[]) => {
+      const [firstArg] = args;
+      if (
+        typeof firstArg === "string" &&
+        firstArg.includes("THREE.THREE.Clock: This module has been deprecated")
+      ) {
+        return;
+      }
+
+      originalWarn(...args);
+    };
+
+    return () => {
+      console.warn = originalWarn;
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -140,21 +177,18 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
     setActiveGalleryIndex(0);
   };
 
-  const showPreviousImage = () => {
-    const galleryLength = galleryPin?.gallery?.length ?? 0;
-    if (!galleryLength) return;
-    setActiveGalleryIndex((current) =>
-      current === 0 ? galleryLength - 1 : current - 1,
-    );
-  };
+  const showPreviousImage = useCallback(() => {
+    setActiveGalleryIndex((current) => (current === 0 ? current : current - 1));
+  }, []);
 
-  const showNextImage = () => {
+  const showNextImage = useCallback(() => {
     const galleryLength = galleryPin?.gallery?.length ?? 0;
     if (!galleryLength) return;
+
     setActiveGalleryIndex((current) =>
-      current === galleryLength - 1 ? current : current + 1,
+      current >= galleryLength - 1 ? current : current + 1,
     );
-  };
+  }, [galleryPin]);
 
   useEffect(() => {
     if (!galleryPin) return;
@@ -177,7 +211,7 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [galleryPin]);
+  }, [galleryPin, showNextImage, showPreviousImage]);
 
   return (
     <div
@@ -209,6 +243,7 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
             const markerPin = pin as TravelPin;
             const element = document.createElement("button");
             const label = document.createElement("span");
+
             element.type = "button";
             element.setAttribute("aria-label", `${markerPin.country} ${markerPin.city}`);
             element.textContent = "";
@@ -231,11 +266,13 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
             element.style.transform = "translate(-50%, -50%)";
             element.style.pointerEvents = "auto";
             element.style.zIndex = markerPin.emphasis === "high" ? "3" : "2";
+
             label.textContent = markerPin.marker ?? "•";
             label.style.fontSize = markerPin.emphasis === "high" ? "18px" : "16px";
             label.style.lineHeight = "1";
             label.style.transform = "translateY(-0.5px)";
             label.style.pointerEvents = "none";
+
             element.appendChild(label);
             element.onmouseenter = () => setActivePin(markerPin);
             element.onclick = (event) => {
@@ -255,6 +292,7 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
               setActivePin(markerPin);
               openPinGallery(markerPin);
             };
+
             return element;
           }}
           ringsData={markerRings}
@@ -294,104 +332,109 @@ export function InteractiveGlobe({ pins }: InteractiveGlobeProps) {
         </div>
       </div>
 
-      {galleryPin && activeGalleryImage ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/78 p-3 sm:p-6"
-          onClick={closePinGallery}
-        >
-          <div
-            className="glass-panel soft-outline relative flex max-h-[92%] w-full max-w-5xl flex-col gap-4 overflow-hidden rounded-[28px] p-4 sm:p-5"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
+      {mounted && galleryPin && activeGalleryImage
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[120] bg-black/84 p-0 sm:flex sm:items-center sm:justify-center sm:p-6"
               onClick={closePinGallery}
-              className="glow-hover absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/55 text-white/80 transition hover:text-white"
-              aria-label="Galeriyi kapat"
             >
-              <X className="h-4 w-4" />
-            </button>
+              <div
+                className="glass-panel soft-outline relative flex h-[100dvh] w-full flex-col gap-4 overflow-hidden rounded-none px-3 pb-3 pt-4 sm:h-auto sm:max-h-[92vh] sm:max-w-5xl sm:rounded-[28px] sm:p-5"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={closePinGallery}
+                  className="glow-hover absolute right-3 top-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/55 text-white/80 transition hover:text-white sm:right-4 sm:top-4"
+                  aria-label="Galeriyi kapat"
+                >
+                  <X className="h-4 w-4" />
+                </button>
 
-            <div className="pr-14">
-              <p className="text-xs uppercase tracking-[0.3em] text-[var(--color-accent)]">
-                {galleryPin.country}
-              </p>
-              <h3 className="mt-2 font-display text-2xl font-semibold text-white">
-                {galleryPin.city} fotoğrafları
-              </h3>
-            </div>
+                <div className="pr-14 pt-1 sm:pt-0">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--color-accent)]">
+                    {galleryPin.country}
+                  </p>
+                  <h3 className="mt-2 font-display text-xl font-semibold text-white sm:text-2xl">
+                    {galleryPin.city} fotoğrafları
+                  </h3>
+                </div>
 
-            <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-black/40">
-              {previousGalleryImage ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={showPreviousImage}
-                    className="absolute left-[4.75rem] top-1/2 z-10 h-14 w-14 -translate-y-1/2 overflow-hidden rounded-[14px] border border-white/10 bg-black/55 transition hover:border-white/25"
-                    aria-label="Önceki fotoğraf önizlemesi"
-                  >
-                    <div className="relative h-full w-full">
-                      <Image
-                        src={previousGalleryImage.image}
-                        alt={previousGalleryImage.alt}
-                        fill
-                        className="object-cover"
-                        sizes="56px"
-                      />
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={showPreviousImage}
-                    className="glow-hover absolute left-4 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-2xl text-white/85 transition hover:text-white"
-                    aria-label="Önceki fotoğraf"
-                  >
-                    ‹
-                  </button>
-                </>
-              ) : null}
-              {nextGalleryImage ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={showNextImage}
-                    className="glow-hover absolute right-4 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-2xl text-white/85 transition hover:text-white"
-                    aria-label="Sonraki fotoğraf"
-                  >
-                    ›
-                  </button>
-                  <button
-                    type="button"
-                    onClick={showNextImage}
-                    className="absolute right-[4.75rem] top-1/2 z-10 h-14 w-14 -translate-y-1/2 overflow-hidden rounded-[14px] border border-white/10 bg-black/55 transition hover:border-white/25"
-                    aria-label="Sonraki fotoğraf önizlemesi"
-                  >
-                    <div className="relative h-full w-full">
-                      <Image
-                        src={nextGalleryImage.image}
-                        alt={nextGalleryImage.alt}
-                        fill
-                        className="object-cover"
-                        sizes="56px"
-                      />
-                    </div>
-                  </button>
-                </>
-              ) : null}
-              <div className="flex h-[58vh] w-full items-center justify-center p-2 sm:h-[64vh] sm:p-3">
-                <Image
-                  src={activeGalleryImage.image}
-                  alt={activeGalleryImage.alt}
-                  width={1600}
-                  height={1600}
-                  className="h-full w-full object-contain object-center"
-                  sizes="(max-width: 1024px) 100vw, 920px"
-                />
+                <div className="relative flex min-h-0 flex-1 overflow-hidden rounded-[24px] border border-white/10 bg-black/40">
+                  {previousGalleryImage ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={showPreviousImage}
+                        className="glow-hover absolute left-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-2xl text-white/85 transition hover:text-white sm:left-4"
+                        aria-label="Önceki fotoğraf"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={showPreviousImage}
+                        className="absolute left-[3.85rem] top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 overflow-hidden rounded-[14px] border border-white/10 bg-black/55 transition hover:border-white/25 sm:block"
+                        aria-label="Önceki fotoğraf önizlemesi"
+                      >
+                        <div className="relative h-full w-full">
+                          <Image
+                            src={previousGalleryImage.image}
+                            alt={previousGalleryImage.alt}
+                            fill
+                            className="object-cover"
+                            sizes="56px"
+                          />
+                        </div>
+                      </button>
+                    </>
+                  ) : null}
+
+                  {nextGalleryImage ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={showNextImage}
+                        className="glow-hover absolute right-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/60 text-2xl text-white/85 transition hover:text-white sm:right-4"
+                        aria-label="Sonraki fotoğraf"
+                      >
+                        ›
+                      </button>
+                      <button
+                        type="button"
+                        onClick={showNextImage}
+                        className="absolute right-[3.85rem] top-1/2 z-10 hidden h-14 w-14 -translate-y-1/2 overflow-hidden rounded-[14px] border border-white/10 bg-black/55 transition hover:border-white/25 sm:block"
+                        aria-label="Sonraki fotoğraf önizlemesi"
+                      >
+                        <div className="relative h-full w-full">
+                          <Image
+                            src={nextGalleryImage.image}
+                            alt={nextGalleryImage.alt}
+                            fill
+                            className="object-cover"
+                            sizes="56px"
+                          />
+                        </div>
+                      </button>
+                    </>
+                  ) : null}
+
+                  <div className="flex h-[72dvh] w-full items-center justify-center p-2 sm:h-[64vh] sm:p-3">
+                    <Image
+                      src={activeGalleryImage.image}
+                      alt={activeGalleryImage.alt}
+                      width={1600}
+                      height={1600}
+                      className="h-full w-full object-contain object-center"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 92vw, 920px"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

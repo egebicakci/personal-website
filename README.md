@@ -84,7 +84,32 @@ Environment variables expected by the current implementation:
 ```bash
 INSTAGRAM_ACCESS_TOKEN=your_long_lived_token
 INSTAGRAM_USER_ID=your_instagram_user_id
+GMAIL_USER=your_gmail_address
+GMAIL_APP_PASSWORD=your_gmail_app_password
 ```
+
+## Lucky spin + planning form
+
+The "BUGÜN KENDİNİZİ ŞANSLI MI HİSSEDİYORSUNUZ?" section opens a spin-wheel modal and then a planning form.
+
+How mail delivery works:
+
+- The form posts to `app/api/beer-plan/route.ts`
+- Mail is sent with Gmail SMTP using `nodemailer`
+- Messages are delivered to `ege.bicakci54@gmail.com`
+- The form currently asks for:
+  - email
+  - phone number
+
+To make this work on Vercel:
+
+1. Enable 2-Step Verification on the Gmail account you will send from.
+2. Create a Gmail App Password.
+3. Add these environment variables in Vercel Project Settings:
+   - `GMAIL_USER`
+   - `GMAIL_APP_PASSWORD`
+
+If these variables are missing, the UI stays functional but the form will return a configuration error instead of silently pretending the message was sent.
 
 How the current implementation behaves:
 

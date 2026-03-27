@@ -59,7 +59,7 @@ export async function InstagramSection() {
                   rel="noreferrer"
                   className="glow-hover inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:border-[var(--color-accent)] hover:bg-white/10"
                 >
-                  Instagram'ı aç
+                  Instagram&apos;ı aç
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </div>

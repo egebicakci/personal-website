@@ -1,4 +1,4 @@
-import { siteContent, travelStats } from "@/data/site-content";
+import { siteContent } from "@/data/site-content";
 import { Reveal } from "@/components/ui/reveal";
 import { SectionHeading } from "@/components/ui/section-heading";
 
