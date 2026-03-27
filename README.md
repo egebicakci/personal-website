@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# egebicakci.com
 
-## Getting Started
+Dark, cinematic personal website built with Next.js, TypeScript, Tailwind CSS, and a responsive component-based architecture prepared for Vercel.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 App Router with TypeScript
+- Tailwind CSS 4
+- Framer Motion for smooth reveal and hover animation
+- `react-globe.gl` + `three` for the interactive 3D globe
+- Next Image for optimized local media
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Edit content
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Most content is intentionally centralized in:
 
-## Learn More
+- `data/site-content.ts`
 
-To learn more about Next.js, take a look at the following resources:
+That file controls:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- name and subtitle
+- profile image path
+- social links
+- visited countries and cities
+- globe pins and coordinates
+- gallery items and filters
+- Instagram fallback profile and posts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Replace placeholder images in:
 
-## Deploy on Vercel
+- `public/images/profile`
+- `public/images/gallery`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If you replace an image path, update the matching entry in `data/site-content.ts`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project structure
+
+```text
+app/
+  api/instagram/route.ts   # JSON endpoint ready for live Instagram data
+  layout.tsx
+  page.tsx
+components/
+  sections/                # Page sections
+  ui/                      # Shared UI pieces and interactive globe
+data/
+  site-content.ts          # Main editable content file
+lib/
+  instagram.ts             # Server-side Instagram fetching logic
+public/
+  images/
+  textures/
+```
+
+## Instagram: what is actually possible
+
+This project does not fake a live Instagram feed.
+
+What works automatically:
+
+- If valid Instagram Graph API credentials are configured, the site can fetch recent posts on the server.
+- The site revalidates the feed every 30 minutes.
+- New posts can then appear automatically without manual code edits.
+- If Graph API credentials are not configured, the site now also attempts a public-profile scrape fallback for basic profile information and, when Instagram allows it, recent post media.
+
+What is required for true automatic updates:
+
+- An Instagram professional account (business or creator)
+- A Facebook app with Instagram Graph API access
+- A long-lived access token
+- The Instagram user ID for the connected account
+
+Environment variables expected by the current implementation:
+
+```bash
+INSTAGRAM_ACCESS_TOKEN=your_long_lived_token
+INSTAGRAM_USER_ID=your_instagram_user_id
+```
+
+How the current implementation behaves:
+
+- If both environment variables exist and the API request succeeds, the Instagram section runs in `live` mode.
+- If Graph API is unavailable, the app tries a `public_scrape` mode using the public Instagram profile HTML and web endpoints.
+- If credentials are missing, invalid, or the API request fails, the section clearly shows `fallback` mode and uses local placeholder posts from `data/site-content.ts`.
+- The fallback is intentional so the site remains polished in production instead of showing broken empty states.
+
+Notes:
+
+- The current code calls `graph.instagram.com` server-side from `lib/instagram.ts`.
+- It also includes an experimental public scrape path in `lib/instagram.ts`. This can partially work for public accounts but is inherently brittle and may fail due to rate limits, markup changes, or anti-bot protections.
+- Depending on your Instagram setup, you may want to expand the profile fetch to use a Meta Graph endpoint for richer account fields.
+- If you prefer a third-party embeddable feed service later, you can swap the internals of `lib/instagram.ts` and keep the section UI unchanged.
+
+## Deployment on Vercel
+
+1. Push the project to GitHub.
+2. Import the repository into Vercel.
+3. Add the environment variables shown above if you want live Instagram updates.
+4. Deploy.
+
+Recommended Vercel settings:
+
+- Framework preset: Next.js
+- Node version: current Vercel default is fine
+- No custom server required
+
+## Notes for future updates
+
+- The globe texture files are stored locally in `public/textures` so runtime does not depend on external CDNs.
+- The gallery uses a responsive masonry-style layout with a built-in lightbox.
+- The globe is dynamically imported on the client so the main server render stays safe and lean.
+- SEO basics are already included through `app/layout.tsx`, `app/robots.ts`, and `app/sitemap.ts`.
