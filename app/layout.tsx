@@ -16,10 +16,7 @@ const siteUrl = "https://egebicakci.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: {
-    default: "Ege Bıçakcı | Seyahat, İçerik ve Dijital Kimlik",
-    template: "%s | Ege Bıçakcı",
-  },
+  title: "Ege Bıçakcı",
   description:
     "Ege Bıçakcı için hazırlanan, seyahat anıları, etkileşimli 3D küre, galeri ve Instagram entegrasyonu içeren karanlık temalı kişisel web sitesi.",
   keywords: [
@@ -49,9 +46,9 @@ export const metadata: Metadata = {
       "Seyahat, içerik üretimi ve premium karanlık arayüzü bir araya getiren kişisel web sitesi.",
   },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
