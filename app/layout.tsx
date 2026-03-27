@@ -12,44 +12,10 @@ const displayFont = Space_Grotesk({
   subsets: ["latin"],
 });
 
-const siteUrl = "https://egebicakci.com";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
   title: "Ege Bıçakcı",
   description:
     "Ege Bıçakcı için hazırlanan, seyahat anıları, etkileşimli 3D küre, galeri ve Instagram entegrasyonu içeren karanlık temalı kişisel web sitesi.",
-  keywords: [
-    "Ege Bıçakcı",
-    "kişisel web sitesi",
-    "seyahat sitesi",
-    "içerik üretici",
-    "etkileşimli küre",
-    "Instagram entegrasyonu",
-  ],
-  alternates: {
-    canonical: siteUrl,
-  },
-  openGraph: {
-    title: "Ege Bıçakcı",
-    description:
-      "Seyahat hikayeleri, galeri bölümü ve güçlü bir dijital duruş sunan sinematik kişisel site deneyimi.",
-    url: siteUrl,
-    siteName: "egebicakci.com",
-    locale: "tr_TR",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Ege Bıçakcı",
-    description:
-      "Seyahat, içerik üretimi ve premium karanlık arayüzü bir araya getiren kişisel web sitesi.",
-  },
-  icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
-  },
 };
 
 export default function RootLayout({
