@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const bodyFont = Manrope({
@@ -25,7 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={`${bodyFont.variable} ${displayFont.variable}`}>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
